@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台南漫遊雷達 | 美食探測器</title>
+    <title>漫遊雷達 | 美食探測器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script>
@@ -78,7 +78,7 @@
                 <span class="text-3xl filter drop-shadow-sm">📡</span>
                 <div>
                     <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-tainan-orange to-tainan-red tracking-wide">Food Radar</h1>
-                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">台南美食探測</p>
+                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">美食探測</p>
                 </div>
             </div>
             <button onclick="resetApp()" class="text-gray-400 hover:text-tainan-orange transition-colors p-2 rounded-full hover:bg-gray-100">
@@ -160,15 +160,15 @@
     <script>
         const KEYWORDS = {
             'chinese': [
-                '台南 牛肉麵', '台南 肉燥飯', '台南 鱔魚意麵', 
-                '台南 鍋燒意麵', '台南 米糕', '台南 虱目魚', 
-                '台南 熱炒', '台南 火鍋', '台南 粥', 
-                '台南 麵店', '台南 便當', '台南 健康餐盒'
+                ' 牛肉麵', ' 肉燥飯', ' 鱔魚意麵', 
+                ' 鍋燒意麵', ' 米糕', ' 虱目魚', 
+                ' 熱炒', ' 火鍋', ' 粥', 
+                ' 麵店', ' 便當', ' 健康餐盒'
             ],
-            'western': ['台南 漢堡', '台南 義大利麵', '台南 牛排', '台南 披薩', '台南 早午餐', '台南 日式料理', '台南 咖哩', '台南 拉麵', '台南 壽司', '台南 韓式料理'],
-            'cafe': ['台南 咖啡廳', '台南 甜點', '台南 蛋糕', '台南 冰店', '台南 豆花', '台南 下午茶', '台南 布丁'],
-            'drinks': ['台南 手搖飲料', '台南 果汁', '台南 紅茶', '台南 綠豆沙', '台南 楊枝甘露'],
-            'late_night': ['台南 鹹酥雞', '台南 燒烤', '台南 串燒', '台南 宵夜', '台南 居酒屋', '台南 滷味']
+            'western': [' 漢堡', ' 義大利麵', ' 牛排', ' 披薩', ' 早午餐', ' 日式料理', ' 咖哩', ' 拉麵', ' 壽司', ' 韓式料理'],
+            'cafe': [' 咖啡廳', ' 甜點', ' 蛋糕', ' 冰店', ' 豆花', ' 下午茶', ' 布丁'],
+            'drinks': [' 手搖飲料', ' 果汁', ' 紅茶', ' 綠豆沙', ' 楊枝甘露'],
+            'late_night': [' 鹹酥雞', ' 燒烤', ' 串燒', ' 宵夜', ' 居酒屋', ' 滷味']
         };
 
         const CATEGORY_NAMES = {
@@ -206,7 +206,7 @@
             if (KEYWORDS[category]) {
                 KEYWORDS[category].forEach(keyword => {
                     const btn = document.createElement('button');
-                    const displayName = keyword.replace('台南 ', '');
+                    const displayName = keyword.replace(' ', '');
                     btn.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-tainan-orange font-bold text-gray-700 text-lg transition-all active:scale-95 active:bg-orange-50";
                     btn.innerText = displayName;
                     btn.onclick = () => startLocationSearch(keyword, false); 
@@ -225,14 +225,14 @@
 
             if (param === 'surprise') {
                 searchKeyword = ALL_KEYWORDS[Math.floor(Math.random() * ALL_KEYWORDS.length)];
-                displayText = `命運選中了... ${searchKeyword.replace('台南 ', '')}！`;
+                displayText = `命運選中了... ${searchKeyword.replace(' ', '')}！`;
             } else if (isRandomCategory) {
                 const list = KEYWORDS[param];
                 searchKeyword = list[Math.floor(Math.random() * list.length)];
-                displayText = `正在隨機搜尋... ${searchKeyword.replace('台南 ', '')}`;
+                displayText = `正在隨機搜尋... ${searchKeyword.replace(' ', '')}`;
             } else {
                 searchKeyword = param;
-                displayText = `正在搜尋附近的... ${searchKeyword.replace('台南 ', '')}`;
+                displayText = `正在搜尋附近的... ${searchKeyword.replace(' ', '')}`;
             }
 
             document.getElementById('loading-text').innerText = displayText;
@@ -253,7 +253,7 @@
                         let errorMsg = "無法取得位置。";
                         if(error.code === 1) errorMsg = "您拒絕了位置存取權限 (被封鎖)。";
                         
-                        alert(errorMsg + "\n將直接為您搜尋台南市區。");
+                        alert(errorMsg + "\n將直接為您搜尋市區。");
                         openGoogleMaps(searchKeyword, 22.9997, 120.2270);
                         resetApp();
                     }
