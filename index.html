@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漫遊雷達 | 美食探測器</title>
+    <title>台南漫遊雷達 | 美食探測器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script>
@@ -60,7 +60,7 @@
                 <span class="text-3xl filter drop-shadow-sm cursor-pointer">📡</span>
                 <div class="cursor-pointer">
                     <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-tainan-orange to-tainan-red tracking-wide">Food Radar</h1>
-                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">美食探測</p>
+                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">台南美食探測</p>
                 </div>
             </div>
             <button onclick="resetApp()" class="text-gray-400 hover:text-tainan-orange transition-colors">
@@ -117,4 +117,154 @@
                 </button>
                 <div>
                     <h2 class="text-2xl font-bold text-gray-800" id="submenu-title">選擇細項</h2>
-                    <p class="text-gray-5
+                    <p class="text-gray-500 text-sm">想吃具體哪一種？</p>
+                </div>
+            </div>
+
+            <div id="submenu-container" class="grid grid-cols-2 gap-3 pb-20"></div>
+        </div>
+
+        <div id="loading-view" class="hidden absolute inset-0 bg-tainan-bg z-20 flex flex-col items-center justify-center pt-20">
+            <div class="relative w-32 h-32 mb-8">
+                <div class="absolute inset-0 border-4 border-tainan-orange/20 rounded-full animate-ping"></div>
+                <div class="absolute inset-0 border-4 border-tainan-orange/40 rounded-full" style="animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-5xl animate-bounce">📍</div>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">正在鎖定你的位置...</h3>
+            <p id="loading-text" class="text-tainan-orange font-bold text-lg animate-pulse">搜尋中...</p>
+            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center">將為你開啟 Google Maps 顯示附近結果</p>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // ★ 關鍵字資料庫 ★
+        // ==========================================
+        const KEYWORDS = {
+            'chinese': [
+                '台南 牛肉麵', '台南 肉燥飯', '台南 鱔魚意麵', 
+                '台南 鍋燒意麵', '台南 米糕', '台南 虱目魚', 
+                '台南 熱炒', '台南 火鍋', '台南 粥', 
+                '台南 麵店', '台南 便當', '台南 健康餐盒' // ★ 已加入健康餐盒
+            ],
+            'western': ['台南 漢堡', '台南 義大利麵', '台南 牛排', '台南 披薩', '台南 早午餐', '台南 日式料理', '台南 咖哩', '台南 拉麵', '台南 壽司', '台南 韓式料理'],
+            'cafe': ['台南 咖啡廳', '台南 甜點', '台南 蛋糕', '台南 冰店', '台南 豆花', '台南 下午茶', '台南 布丁'],
+            'drinks': ['台南 手搖飲料', '台南 果汁', '台南 紅茶', '台南 綠豆沙', '台南 楊枝甘露'],
+            'late_night': ['台南 鹹酥雞', '台南 燒烤', '台南 串燒', '台南 宵夜', '台南 居酒屋', '台南 滷味']
+        };
+
+        const CATEGORY_NAMES = {
+            'chinese': '🍜 中式美食',
+            'western': '🍔 西式料理',
+            'cafe': '🍰 甜點咖啡',
+            'drinks': '🍹 手搖飲料',
+            'late_night': '🍢 宵夜時光'
+        };
+
+        const ALL_KEYWORDS = [].concat(...Object.values(KEYWORDS));
+
+        // 顯示子選單的程式邏輯
+        function showSubMenu(category) {
+            console.log("切換選單到:", category); // 除錯用
+
+            // 取得頁面元素
+            const categoryView = document.getElementById('category-view');
+            const submenuView = document.getElementById('submenu-view');
+            const container = document.getElementById('submenu-container');
+
+            // 如果找不到元素，代表 HTML 沒更新到
+            if (!categoryView || !submenuView || !container) {
+                alert("錯誤：HTML 結構不完整，請確保已複製並覆蓋整份程式碼！");
+                return;
+            }
+
+            // 隱藏主選單，顯示子選單
+            categoryView.classList.add('hidden');
+            submenuView.classList.remove('hidden');
+            
+            // 更新標題
+            document.getElementById('submenu-title').innerText = CATEGORY_NAMES[category];
+            
+            // 清空舊按鈕
+            container.innerHTML = ''; 
+
+            // 1. 加入「隨機」按鈕
+            const randomBtn = document.createElement('button');
+            randomBtn.className = "col-span-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 rounded-xl shadow-lg font-bold flex justify-center items-center gap-2 transform active:scale-95 transition-all";
+            randomBtn.innerHTML = "🎲 隨便，這類都可以";
+            randomBtn.onclick = () => startLocationSearch(category, true); 
+            container.appendChild(randomBtn);
+
+            // 2. 加入「細項」按鈕
+            if (KEYWORDS[category]) {
+                KEYWORDS[category].forEach(keyword => {
+                    const btn = document.createElement('button');
+                    const displayName = keyword.replace('台南 ', '');
+                    
+                    btn.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-tainan-orange font-bold text-gray-700 text-lg transition-all active:scale-95 active:bg-orange-50";
+                    btn.innerText = displayName;
+                    btn.onclick = () => startLocationSearch(keyword, false); 
+                    container.appendChild(btn);
+                });
+            }
+        }
+
+        // 開始定位並搜尋
+        function startLocationSearch(param, isRandomCategory) {
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('submenu-view').classList.add('hidden');
+            document.getElementById('loading-view').classList.remove('hidden');
+
+            let searchKeyword = '';
+            let displayText = '';
+
+            if (param === 'surprise') {
+                searchKeyword = ALL_KEYWORDS[Math.floor(Math.random() * ALL_KEYWORDS.length)];
+                displayText = `命運選中了... ${searchKeyword.replace('台南 ', '')}！`;
+            } else if (isRandomCategory) {
+                const list = KEYWORDS[param];
+                searchKeyword = list[Math.floor(Math.random() * list.length)];
+                displayText = `正在隨機搜尋... ${searchKeyword.replace('台南 ', '')}`;
+            } else {
+                searchKeyword = param;
+                displayText = `正在搜尋附近的... ${searchKeyword.replace('台南 ', '')}`;
+            }
+
+            document.getElementById('loading-text').innerText = displayText;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setTimeout(() => {
+                            openGoogleMaps(searchKeyword, lat, lng);
+                            setTimeout(() => resetApp(), 1000); 
+                        }, 800);
+                    },
+                    (error) => {
+                        alert("無法取得位置，將直接搜尋台南市區。");
+                        openGoogleMaps(searchKeyword, 22.9997, 120.2270);
+                        resetApp();
+                    }
+                );
+            } else {
+                alert("你的瀏覽器不支援定位功能。");
+                openGoogleMaps(searchKeyword, 22.9997, 120.2270);
+            }
+        }
+
+        function openGoogleMaps(keyword, lat, lng) {
+            const url = `https://www.google.com/maps/search/${encodeURIComponent(keyword)}/@${lat},${lng},15z`;
+            window.open(url, '_blank');
+        }
+
+        function resetApp() {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('submenu-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
