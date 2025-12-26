@@ -41,39 +41,57 @@
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+        
         .blob {
             position: fixed;
             filter: blur(40px);
-            z-index: -1;
+            z-index: 0; /* 改為 0，確保在最底層 */
             opacity: 0.6;
+            pointer-events: none; /* 讓滑鼠可以穿透背景球點擊文字 */
+        }
+
+        /* 自定義捲軸樣式 (讓電腦版比較好看，但看得到) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF8C42; 
+            border-radius: 4px;
+            opacity: 0.5;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF5A5F; 
         }
     </style>
 </head>
-<body class="bg-tainan-bg text-gray-700 h-screen flex flex-col overflow-hidden relative">
+<body class="bg-tainan-bg text-gray-700 h-screen flex flex-col overflow-hidden relative selection:bg-tainan-orange selection:text-white">
 
     <div class="blob w-64 h-64 bg-tainan-yellow rounded-full top-[-50px] left-[-50px] animate-float" style="animation-delay: 0s;"></div>
     <div class="blob w-80 h-80 bg-tainan-blue rounded-full bottom-[-80px] right-[-40px] animate-float" style="animation-delay: 2s;"></div>
 
-    <header class="z-20 bg-white/70 backdrop-blur-lg shadow-sm fixed w-full top-0 left-0 px-4 py-3 border-b border-white/50">
+    <header class="z-50 bg-white/80 backdrop-blur-lg shadow-sm fixed w-full top-0 left-0 px-4 py-3 border-b border-white/50">
         <div class="flex justify-between items-center max-w-2xl mx-auto">
-            <div class="flex items-center gap-2" onclick="location.reload()">
-                <span class="text-3xl filter drop-shadow-sm cursor-pointer">📡</span>
-                <div class="cursor-pointer">
+            <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="location.reload()">
+                <span class="text-3xl filter drop-shadow-sm">📡</span>
+                <div>
                     <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-tainan-orange to-tainan-red tracking-wide">Food Radar</h1>
                     <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">台南美食探測</p>
                 </div>
             </div>
-            <button onclick="resetApp()" class="text-gray-400 hover:text-tainan-orange transition-colors">
+            <button onclick="resetApp()" class="text-gray-400 hover:text-tainan-orange transition-colors p-2 rounded-full hover:bg-gray-100">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
             </button>
         </div>
     </header>
 
-    <main class="flex-grow pt-28 pb-10 px-4 z-10 max-w-2xl mx-auto w-full overflow-y-auto no-scrollbar relative">
+    <main class="flex-grow pt-28 pb-10 px-4 z-10 max-w-2xl mx-auto w-full overflow-y-auto relative" id="main-content">
         
-        <div id="category-view" class="animate-pop">
+        <div id="category-view" class="animate-pop pb-10">
             <div class="text-center mb-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-1">今天想吃哪一類？</h2>
                 <p class="text-gray-500 text-sm">選擇類別，再挑選細項</p>
@@ -108,9 +126,9 @@
             </div>
         </div>
 
-        <div id="submenu-view" class="hidden animate-pop">
-            <div class="flex items-center mb-6">
-                <button onclick="resetApp()" class="mr-4 bg-white p-2 rounded-full shadow text-gray-500 hover:text-tainan-orange">
+        <div id="submenu-view" class="hidden animate-pop pb-20">
+            <div class="flex items-center mb-6 sticky top-0 bg-tainan-bg/95 backdrop-blur py-2 z-10">
+                <button onclick="resetApp()" class="mr-4 bg-white p-2 rounded-full shadow text-gray-500 hover:text-tainan-orange transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -121,10 +139,11 @@
                 </div>
             </div>
 
-            <div id="submenu-container" class="grid grid-cols-2 gap-3 pb-20"></div>
+            <div id="submenu-container" class="grid grid-cols-2 gap-3">
+                </div>
         </div>
 
-        <div id="loading-view" class="hidden absolute inset-0 bg-tainan-bg z-20 flex flex-col items-center justify-center pt-20">
+        <div id="loading-view" class="hidden fixed inset-0 bg-tainan-bg z-30 flex flex-col items-center justify-center pt-20">
             <div class="relative w-32 h-32 mb-8">
                 <div class="absolute inset-0 border-4 border-tainan-orange/20 rounded-full animate-ping"></div>
                 <div class="absolute inset-0 border-4 border-tainan-orange/40 rounded-full" style="animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
@@ -132,21 +151,19 @@
             </div>
             <h3 class="text-2xl font-bold text-gray-800 mb-2">正在鎖定你的位置...</h3>
             <p id="loading-text" class="text-tainan-orange font-bold text-lg animate-pulse">搜尋中...</p>
-            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center">將為你開啟 Google Maps 顯示附近結果</p>
+            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center">請在瀏覽器左上角點擊「允許」位置存取，<br>或檢查瀏覽器設定。</p>
+            <button onclick="location.reload()" class="mt-8 px-6 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-500 hover:bg-gray-50">如果卡住請點此重新整理</button>
         </div>
 
     </main>
 
     <script>
-        // ==========================================
-        // ★ 關鍵字資料庫 ★
-        // ==========================================
         const KEYWORDS = {
             'chinese': [
                 '台南 牛肉麵', '台南 肉燥飯', '台南 鱔魚意麵', 
                 '台南 鍋燒意麵', '台南 米糕', '台南 虱目魚', 
                 '台南 熱炒', '台南 火鍋', '台南 粥', 
-                '台南 麵店', '台南 便當', '台南 健康餐盒' // ★ 已加入健康餐盒
+                '台南 麵店', '台南 便當', '台南 健康餐盒'
             ],
             'western': ['台南 漢堡', '台南 義大利麵', '台南 牛排', '台南 披薩', '台南 早午餐', '台南 日式料理', '台南 咖哩', '台南 拉麵', '台南 壽司', '台南 韓式料理'],
             'cafe': ['台南 咖啡廳', '台南 甜點', '台南 蛋糕', '台南 冰店', '台南 豆花', '台南 下午茶', '台南 布丁'],
@@ -164,44 +181,32 @@
 
         const ALL_KEYWORDS = [].concat(...Object.values(KEYWORDS));
 
-        // 顯示子選單的程式邏輯
         function showSubMenu(category) {
-            console.log("切換選單到:", category); // 除錯用
-
-            // 取得頁面元素
             const categoryView = document.getElementById('category-view');
             const submenuView = document.getElementById('submenu-view');
             const container = document.getElementById('submenu-container');
 
-            // 如果找不到元素，代表 HTML 沒更新到
-            if (!categoryView || !submenuView || !container) {
-                alert("錯誤：HTML 結構不完整，請確保已複製並覆蓋整份程式碼！");
-                return;
-            }
+            if (!categoryView || !submenuView || !container) return;
 
-            // 隱藏主選單，顯示子選單
             categoryView.classList.add('hidden');
             submenuView.classList.remove('hidden');
             
-            // 更新標題
-            document.getElementById('submenu-title').innerText = CATEGORY_NAMES[category];
+            // 讓頁面滾動回最上方，避免切換後卡在中間
+            document.getElementById('main-content').scrollTop = 0;
             
-            // 清空舊按鈕
+            document.getElementById('submenu-title').innerText = CATEGORY_NAMES[category];
             container.innerHTML = ''; 
 
-            // 1. 加入「隨機」按鈕
             const randomBtn = document.createElement('button');
-            randomBtn.className = "col-span-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 rounded-xl shadow-lg font-bold flex justify-center items-center gap-2 transform active:scale-95 transition-all";
+            randomBtn.className = "col-span-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 rounded-xl shadow-lg font-bold flex justify-center items-center gap-2 transform active:scale-95 transition-all hover:shadow-xl";
             randomBtn.innerHTML = "🎲 隨便，這類都可以";
             randomBtn.onclick = () => startLocationSearch(category, true); 
             container.appendChild(randomBtn);
 
-            // 2. 加入「細項」按鈕
             if (KEYWORDS[category]) {
                 KEYWORDS[category].forEach(keyword => {
                     const btn = document.createElement('button');
                     const displayName = keyword.replace('台南 ', '');
-                    
                     btn.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-tainan-orange font-bold text-gray-700 text-lg transition-all active:scale-95 active:bg-orange-50";
                     btn.innerText = displayName;
                     btn.onclick = () => startLocationSearch(keyword, false); 
@@ -210,7 +215,6 @@
             }
         }
 
-        // 開始定位並搜尋
         function startLocationSearch(param, isRandomCategory) {
             document.getElementById('category-view').classList.add('hidden');
             document.getElementById('submenu-view').classList.add('hidden');
@@ -244,7 +248,12 @@
                         }, 800);
                     },
                     (error) => {
-                        alert("無法取得位置，將直接搜尋台南市區。");
+                        console.error("Geolocation Error:", error);
+                        // 針對 PC 常見的封鎖狀況給予提示
+                        let errorMsg = "無法取得位置。";
+                        if(error.code === 1) errorMsg = "您拒絕了位置存取權限 (被封鎖)。";
+                        
+                        alert(errorMsg + "\n將直接為您搜尋台南市區。");
                         openGoogleMaps(searchKeyword, 22.9997, 120.2270);
                         resetApp();
                     }
@@ -264,6 +273,8 @@
             document.getElementById('loading-view').classList.add('hidden');
             document.getElementById('submenu-view').classList.add('hidden');
             document.getElementById('category-view').classList.remove('hidden');
+            // 重置時也滾回上方
+            document.getElementById('main-content').scrollTop = 0;
         }
     </script>
 </body>
