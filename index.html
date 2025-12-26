@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台南漫遊指南 | 雲端即時版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: #FDFBF7; color: #4A4A4A; overflow-x: hidden; }
+        
+        /* 浮水印 */
+        .watermark { position: fixed; bottom: -50px; right: -50px; width: 400px; height: 400px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="%23D97757" stroke-width="1" opacity="0.1"><path d="M20,180 L180,180 L180,100 L160,100 L160,80 L140,80 L140,60 L120,60 L120,40 L80,40 L80,60 L60,60 L60,80 L40,80 L40,100 L20,100 Z" /></svg>'); background-repeat: no-repeat; pointer-events: none; z-index: 0; }
+        
+        /* 樣式與動畫 */
+        .price-btn.active { background-color: #D97757; color: white; border-color: #D97757; }
+        .shop-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .shop-card:active { transform: scale(0.98); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 載入動畫 Spinner */
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #D97757; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <div class="watermark"></div>
+
+    <header class="z-20 bg-[#FDFBF7]/90 backdrop-blur-md shadow-sm fixed w-full top-0 left-0 p-4 border-b border-[#E5E0D8]">
+        <div class="flex justify-between items-center max-w-2xl mx-auto">
+            <div>
+                <h1 class="text-xl font-bold tracking-widest text-[#8B5A2B]">府城漫遊</h1>
+                <p class="text-xs text-gray-500" id="status-text">連線中...</p>
+            </div>
+            <button onclick="resetApp()" class="text-sm border border-[#D97757] text-[#D97757] px-3 py-1 rounded-full hover:bg-[#D97757] hover:text-white transition">
+                ↻ 重新選擇
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow pt-24 pb-24 px-4 z-10 max-w-2xl mx-auto w-full overflow-y-auto no-scrollbar" id="main-container">
+        
+        <div id="loading-view" class="text-center mt-20">
+            <div class="loader"></div>
+            <p class="text-gray-500 font-medium">正在讀取您的 Google Sheet...</p>
+            <p class="text-xs text-gray-400 mt-2">如果您看到此畫面太久，請確認 Sheet 是否已發布</p>
+        </div>
+
+        <div id="error-view" class="hidden text-center mt-20 text-red-500">
+            <p class="font-bold text-lg">讀取資料失敗 😢</p>
+            <p class="text-sm mt-2 text-gray-600">無法讀取您的 Google Sheet。</p>
+            <ul class="text-xs text-left inline-block mt-4 list-disc pl-5 text-gray-500">
+                <li>請確認您已在 Google Sheet 按下「發布到網路」</li>
+                <li>請確認發布格式選擇「逗號分隔值 (.csv)」</li>
+                <li>請確認欄位標題 (Row 1) 是否正確</li>
+            </ul>
+            <br>
+            <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-gray-200 rounded text-gray-700">重試</button>
+        </div>
+
+        <div id="category-view" class="hidden grid grid-cols-2 gap-4 animate-fade-in">
+            <div class="col-span-2 mb-2 text-center text-gray-600 font-medium">今天想去哪裡？</div>
+            
+            <button onclick="selectCategory('chinese')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#D97757] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">🥢</span><span class="font-bold text-lg">中式美食</span>
+            </button>
+            <button onclick="selectCategory('western')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#C1A689] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">🍔</span><span class="font-bold text-lg">西式料理</span>
+            </button>
+            <button onclick="selectCategory('cafe')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#8B5A2B] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">☕</span><span class="font-bold text-lg">咖啡甜點</span>
+            </button>
+            <button onclick="selectCategory('drinks')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#6DA094] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">🥤</span><span class="font-bold text-lg">手搖飲料</span>
+            </button>
+            <button onclick="selectCategory('convenience')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#F4A261] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">🏪</span><span class="font-bold text-lg">便利商店</span>
+            </button>
+            <button onclick="selectCategory('market')" class="category-card p-6 bg-white rounded-xl shadow-md border-l-4 border-[#2A9D8F] flex flex-col items-center gap-2 hover:shadow-lg transition">
+                <span class="text-3xl">🛒</span><span class="font-bold text-lg">賣場/百貨</span>
+            </button>
+        </div>
+
+        <div id="list-view" class="hidden">
+            <div class="flex gap-2 mb-6 overflow-x-auto pb-2 sticky top-0 bg-[#FDFBF7] z-10 py-2">
+                <button onclick="filterPrice('all')" id="btn-all" class="price-btn active px-4 py-2 rounded-full text-sm font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap">全部</button>
+                <button onclick="filterPrice('low')" id="btn-low" class="price-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap">$100-200</button>
+                <button onclick="filterPrice('mid')" id="btn-mid" class="price-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap">$200-300</button>
+                <button onclick="filterPrice('high')" id="btn-high" class="price-btn px-4 py-2 rounded-full text-sm font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap">$300以上</button>
+            </div>
+
+            <h2 id="current-category-title" class="text-xl font-bold mb-4 text-[#8B5A2B] pl-1">搜尋結果</h2>
+            <div id="results-container" class="space-y-4"></div>
+            <div id="no-result" class="hidden text-center py-10 text-gray-400">
+                <p>此價格區間無符合條件的商家</p>
+                <button onclick="filterPrice('all')" class="mt-2 text-[#D97757] underline">查看全部</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // ★ 您的 Google Sheet 連結已設定完成 (已修正引號問題) ★
+        // ==========================================
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3DEQ7bJgEEt3vdm4oIImu0Q23gsrhmtBCGpsM3ZIHiZMwlNDo5cNJAfZesHnj0ygO2WK7F913Ciml/pub?output=csv";
+        
+        let database = [];
+        let currentCategory = '';
+        let currentPriceFilter = 'all';
+
+        // 初始化：載入資料
+        window.onload = function() {
+            fetchDataFromSheet();
+        };
+
+        async function fetchDataFromSheet() {
+            try {
+                // 加個時間戳記避免快取，確保每次打開都是最新的
+                const cacheBuster = "&t=" + new Date().getTime();
+                const response = await fetch(SHEET_CSV_URL + cacheBuster);
+                
+                if (!response.ok) throw new Error("Network error");
+                const data = await response.text();
+                parseCSV(data);
+            } catch (error) {
+                console.error("Error loading sheet:", error);
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('error-view').classList.remove('hidden');
+                document.getElementById('status-text').innerText = "連線失敗";
+            }
+        }
+
+        // 解析 CSV 資料
+        function parseCSV(csvText) {
+            const rows = csvText.split('\n').map(row => row.trim()).filter(row => row);
+            
+            // 簡單檢查第一行是否包含必要的標題
+            if (rows.length < 2) {
+                console.error("CSV seems empty or only headers");
+                return;
+            }
+
+            // 從第二行開始讀取數據
+            database = rows.slice(1).map((row, index) => {
+                // 處理 CSV 逗號分隔 (簡易版)
+                const values = row.split(',');
+                
+                // 防止空行錯誤
+                if(values.length < 5) return null;
+
+                // 移除可能的空白與引號
+                const cleanValue = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
+
+                // 自動判斷價位等級
+                const price = parseInt(cleanValue(values[2])) || 0;
+                let pLevel = 'mid';
+                if (price < 200) pLevel = 'low';
+                else if (price >= 300) pLevel = 'high';
+
+                return {
+                    id: index,
+                    name: cleanValue(values[0]),       // A欄 name
+                    category: cleanValue(values[1]),   // B欄 category
+                    priceLevel: pLevel,                // 自動計算
+                    price: price,                      // C欄 price
+                    parking: cleanValue(values[3]),    // D欄 parking
+                    address: cleanValue(values[4]),    // E欄 address
+                    parkingType: cleanValue(values[5]) || 'public' // F欄 parkingType
+                };
+            }).filter(item => item !== null);
+
+            // 資料載入完成，切換畫面
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+            document.getElementById('status-text').innerText = "已連線至資料庫";
+        }
+
+        // 選擇類別
+        function selectCategory(category) {
+            currentCategory = category;
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('list-view').classList.remove('hidden');
+            
+            const titles = {
+                'chinese': '🥢 中式美食推薦',
+                'western': '🍔 西式料理推薦',
+                'cafe': '☕ 咖啡甜點時光',
+                'drinks': '🥤 手搖飲品解渴',
+                'convenience': '🏪 便利商店 (好停車)',
+                'market': '🛒 賣場與百貨'
+            };
+            document.getElementById('current-category-title').innerText = titles[category] || '搜尋結果';
+            filterPrice('all');
+        }
+
+        // 價格篩選
+        function filterPrice(priceLevel) {
+            currentPriceFilter = priceLevel;
+            document.querySelectorAll('.price-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-[#D97757]', 'text-white');
+                btn.classList.add('bg-white', 'text-gray-500');
+            });
+            const activeBtn = document.getElementById('btn-' + priceLevel);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-gray-500');
+                activeBtn.classList.add('active', 'bg-[#D97757]', 'text-white');
+            }
+            renderList();
+        }
+
+        // 渲染列表
+        function renderList() {
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+            
+            const filteredData = database.filter(item => {
+                const categoryMatch = item.category === currentCategory;
+                const priceMatch = (currentPriceFilter === 'all') || (item.priceLevel === currentPriceFilter);
+                return categoryMatch && priceMatch;
+            });
+
+            if (filteredData.length === 0) {
+                document.getElementById('no-result').classList.remove('hidden');
+            } else {
+                document.getElementById('no-result').classList.add('hidden');
+                filteredData.forEach(item => {
+                    const parkingColor = item.parkingType === 'dedicated' ? 'text-green-600 bg-green-50' : 'text-blue-600 bg-blue-50';
+                    const parkingIcon = item.parkingType === 'dedicated' ? '🅿️ 專屬' : '🚙 路邊';
+                    let priceDisplay = `$${item.price}`;
+                    if(item.price >= 300) priceDisplay += '+';
+
+                    const card = document.createElement('div');
+                    card.className = 'shop-card bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer';
+                    
+                    // 【已修正】這裡修復了地圖連結的格式，可以正確開啟 Google Maps 搜尋
+                    // 請將原本那行改成這樣：
+                    card.onclick = () => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`, '_blank');
+
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs px-2 py-1 rounded-md ${parkingColor} font-medium">
+                                    ${parkingIcon} ${item.parking}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end pl-4 border-l border-gray-100">
+                            <div class="text-[#D97757] font-bold text-xl">${priceDisplay}</div>
+                            <div class="text-xs text-gray-400">平均消費</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        function resetApp() {
+            currentCategory = '';
+            currentPriceFilter = 'all';
+            document.getElementById('list-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
