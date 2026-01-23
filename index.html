@@ -139,7 +139,7 @@
             </div>
             <h3 class="text-2xl font-bold text-gray-800 mb-2">正在鎖定你的位置...</h3>
             <p id="loading-text" class="text-radar-orange font-bold text-lg animate-pulse">搜尋中...</p>
-            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center px-4">如果一直卡在這裡，<br>請試著點選右上角用 Chrome/Safari 開啟。</p>
+            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center px-4">將為您跳轉至 Google Maps</p>
             <button onclick="location.reload()" class="mt-8 px-6 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-500 hover:bg-gray-50">重新整理</button>
         </div>
 
@@ -158,9 +158,6 @@
             }
         };
 
-        // ==========================================
-        // ★ 資料庫 ★
-        // ==========================================
         const KEYWORDS = {
             'chinese': [
                 '牛肉麵', '肉燥飯', '鱔魚意麵', 
@@ -244,30 +241,32 @@
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
                         setTimeout(() => {
+                            // ★ 修正重點：不自動 reset，避免使用者覺得被彈回首頁
                             openGoogleMaps(searchKeyword, lat, lng);
-                            setTimeout(() => resetApp(), 1000); 
                         }, 800);
                     },
                     (error) => {
                         console.error("Geolocation Error:", error);
-                        // 針對被封鎖或 LINE 瀏覽器的處理
-                        alert("無法精確定位 (可能被瀏覽器封鎖)。\n\n將直接為您開啟 Google Maps 搜尋。\n(建議使用 Safari/Chrome 以獲得最佳體驗)");
+                        alert("定位失敗或被封鎖，將改用一般搜尋。\n(建議使用 Safari/Chrome)");
                         
                         const url = `https://www.google.com/maps/search/${encodeURIComponent(searchKeyword)}`;
-                        window.open(url, '_blank');
-                        resetApp();
+                        // 失敗時也使用 location.href
+                        window.location.href = url;
                     }
                 );
             } else {
                 alert("你的瀏覽器不支援定位功能。");
                 const url = `https://www.google.com/maps/search/${encodeURIComponent(searchKeyword)}`;
-                window.open(url, '_blank');
+                window.location.href = url;
             }
         }
 
         function openGoogleMaps(keyword, lat, lng) {
             const url = `https://www.google.com/maps/search/${encodeURIComponent(keyword)}/@${lat},${lng},15z`;
-            window.open(url, '_blank');
+            
+            // ★ 修正重點：使用 location.href (同分頁跳轉) 
+            // 這樣不會被瀏覽器當成彈窗廣告擋掉
+            window.location.href = url;
         }
 
         function resetApp() {
