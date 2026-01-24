@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>美食雷達 | 尋找附近好料</title>
+    <title>台南美食雷達 | 家庭共享版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script>
@@ -24,256 +24,252 @@
                         }
                     },
                     animation: {
-                        'float': 'float 6s ease-in-out infinite',
                         'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        pop: {
+                            '0%': { transform: 'scale(0.9)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
-        }
-        @keyframes pop {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .blob {
-            position: fixed;
-            filter: blur(40px);
-            z-index: 0;
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #FF8C42; border-radius: 4px; opacity: 0.5; }
-        ::-webkit-scrollbar-thumb:hover { background: #FF5A5F; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .blob { position: fixed; filter: blur(40px); z-index: -1; opacity: 0.6; pointer-events: none; }
+        .nav-active { color: #FF8C42; font-weight: bold; }
+        .nav-active svg { stroke: #FF8C42; stroke-width: 2.5; }
     </style>
 </head>
-<body class="bg-radar-bg text-gray-700 h-screen flex flex-col overflow-hidden relative selection:bg-radar-orange selection:text-white">
+<body class="bg-radar-bg text-gray-700 h-screen flex flex-col overflow-hidden relative">
 
-    <div class="blob w-64 h-64 bg-radar-yellow rounded-full top-[-50px] left-[-50px] animate-float" style="animation-delay: 0s;"></div>
-    <div class="blob w-80 h-80 bg-radar-blue rounded-full bottom-[-80px] right-[-40px] animate-float" style="animation-delay: 2s;"></div>
+    <div class="blob w-64 h-64 bg-radar-yellow rounded-full top-[-50px] left-[-50px]"></div>
+    <div class="blob w-80 h-80 bg-radar-blue rounded-full bottom-[-80px] right-[-40px]"></div>
 
-    <header class="z-50 bg-white/80 backdrop-blur-lg shadow-sm fixed w-full top-0 left-0 px-4 py-3 border-b border-white/50">
+    <header class="z-20 bg-white/90 backdrop-blur-md shadow-sm fixed w-full top-0 left-0 px-4 py-3 border-b border-white/50">
         <div class="flex justify-between items-center max-w-2xl mx-auto">
-            <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="location.reload()">
-                <span class="text-3xl filter drop-shadow-sm">📡</span>
+            <div class="flex items-center gap-2" onclick="location.reload()">
+                <span class="text-3xl filter drop-shadow-sm">☁️</span>
                 <div>
-                    <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-radar-orange to-radar-red tracking-wide">Food Radar</h1>
-                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block">尋找附近美食</p>
+                    <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-radar-orange to-radar-red tracking-wide">Family Food</h1>
+                    <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block" id="header-status">連線中...</p>
                 </div>
             </div>
-            <button onclick="resetApp()" class="text-gray-400 hover:text-radar-orange transition-colors p-2 rounded-full hover:bg-gray-100">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onclick="fetchDataFromSheet()" class="bg-gray-100 text-gray-500 p-2 rounded-full hover:bg-radar-orange hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
             </button>
         </div>
     </header>
 
-    <main class="flex-grow pt-28 pb-10 px-4 z-10 max-w-2xl mx-auto w-full overflow-y-auto relative" id="main-content">
+    <main class="flex-grow pt-24 pb-24 px-4 z-10 max-w-2xl mx-auto w-full overflow-y-auto no-scrollbar relative" id="main-container">
         
-        <div id="category-view" class="animate-pop pb-10">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-1">今天想吃哪一類？</h2>
-                <p class="text-gray-500 text-sm">搜尋目前位置附近的餐廳</p>
+        <div id="page-radar" class="page-section animate-pop">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">家庭美食雷達</h2>
+                <p class="text-gray-500 text-sm">搜尋我們共同的口袋名單</p>
             </div>
             
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="showSubMenu('chinese')" class="group bg-white p-6 rounded-2xl shadow-lg shadow-orange-100 hover:shadow-orange-200 border-2 border-transparent hover:border-radar-orange transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍜</div>
-                    <div class="font-bold text-lg text-gray-700">中式/小吃</div>
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button onclick="searchByCategory('chinese')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-radar-orange hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍜</span><span class="font-bold text-gray-700">中式/小吃</span>
                 </button>
-                <button onclick="showSubMenu('western')" class="group bg-white p-6 rounded-2xl shadow-lg shadow-blue-100 hover:shadow-blue-200 border-2 border-transparent hover:border-radar-blue transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍔</div>
-                    <div class="font-bold text-lg text-gray-700">西式/異國</div>
+                <button onclick="searchByCategory('western')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-radar-blue hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍔</span><span class="font-bold text-gray-700">西式/異國</span>
                 </button>
-                <button onclick="showSubMenu('cafe')" class="group bg-white p-6 rounded-2xl shadow-lg shadow-yellow-100 hover:shadow-yellow-200 border-2 border-transparent hover:border-radar-yellow transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍰</div>
-                    <div class="font-bold text-lg text-gray-700">甜點咖啡</div>
+                <button onclick="searchByCategory('cafe')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-radar-yellow hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍰</span><span class="font-bold text-gray-700">甜點咖啡</span>
                 </button>
-                <button onclick="showSubMenu('drinks')" class="group bg-white p-6 rounded-2xl shadow-lg shadow-teal-100 hover:shadow-teal-200 border-2 border-transparent hover:border-teal-400 transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍹</div>
-                    <div class="font-bold text-lg text-gray-700">解渴手搖</div>
+                <button onclick="searchByCategory('drinks')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-teal-400 hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍹</span><span class="font-bold text-gray-700">手搖飲料</span>
                 </button>
-                <button onclick="showSubMenu('late_night')" class="group bg-white p-6 rounded-2xl shadow-lg shadow-purple-100 hover:shadow-purple-200 border-2 border-transparent hover:border-purple-400 transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍢</div>
-                    <div class="font-bold text-lg text-gray-700">宵夜場</div>
+                <button onclick="searchByCategory('healthy')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-green-400 hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍱</span><span class="font-bold text-gray-700">健康餐盒</span>
                 </button>
-                <button onclick="startLocationSearch('surprise')" class="group bg-gradient-to-br from-radar-orange to-radar-red p-6 rounded-2xl shadow-lg shadow-red-200 hover:shadow-red-300 text-white transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
-                    <div class="text-4xl mb-3 animate-pulse">🎲</div>
-                    <div class="font-bold text-lg">幫我決定！</div>
-                    <div class="text-xs text-white/80 mt-1">全隨機</div>
+                <button onclick="searchByCategory('late_night')" class="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:border-purple-400 hover:shadow-md transition-all flex flex-col items-center gap-2">
+                    <span class="text-4xl">🍢</span><span class="font-bold text-gray-700">宵夜燒烤</span>
+                </button>
+                <button onclick="pickRandom()" class="col-span-2 p-4 rounded-2xl bg-gradient-to-r from-radar-orange to-radar-red text-white shadow-lg hover:shadow-xl transition-all flex justify-center items-center gap-3">
+                    <span class="text-3xl animate-bounce">🎲</span>
+                    <span class="font-bold text-lg">幫我隨機選一家！</span>
                 </button>
             </div>
         </div>
 
-        <div id="submenu-view" class="hidden animate-pop pb-20">
-            <div class="flex items-center mb-6 sticky top-0 bg-radar-bg/95 backdrop-blur py-2 z-10">
-                <button onclick="resetApp()" class="mr-4 bg-white p-2 rounded-full shadow text-gray-500 hover:text-radar-orange transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800" id="submenu-title">選擇細項</h2>
-                    <p class="text-gray-500 text-sm">想吃具體哪一種？</p>
-                </div>
+        <div id="page-list" class="page-section hidden animate-slide-up">
+            <div class="flex items-center justify-between mb-4 sticky top-0 bg-radar-bg/95 py-2 z-10 backdrop-blur">
+                <h2 class="text-xl font-bold text-gray-800">所有店家</h2>
+                <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full" id="total-count">0 間</span>
             </div>
 
-            <div id="submenu-container" class="grid grid-cols-2 gap-3"></div>
-        </div>
-
-        <div id="loading-view" class="hidden fixed inset-0 bg-radar-bg z-30 flex flex-col items-center justify-center pt-20">
-            <div class="relative w-32 h-32 mb-8">
-                <div class="absolute inset-0 border-4 border-radar-orange/20 rounded-full animate-ping"></div>
-                <div class="absolute inset-0 border-4 border-radar-orange/40 rounded-full" style="animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-5xl animate-bounce">📍</div>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-2">
+                <button onclick="filterList('all')" class="filter-btn active px-4 py-1.5 rounded-full text-sm font-bold bg-gray-800 text-white whitespace-nowrap">全部</button>
+                <button onclick="filterList('chinese')" class="filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap">🍜 中式</button>
+                <button onclick="filterList('western')" class="filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap">🍔 西式</button>
+                <button onclick="filterList('cafe')" class="filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap">🍰 甜點</button>
+                <button onclick="filterList('healthy')" class="filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap">🍱 健康</button>
+                <button onclick="filterList('late_night')" class="filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap">🍢 宵夜</button>
             </div>
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">正在鎖定你的位置...</h3>
-            <p id="loading-text" class="text-radar-orange font-bold text-lg animate-pulse">搜尋中...</p>
-            <p class="text-xs text-gray-400 mt-8 max-w-xs text-center px-4">將為您跳轉至 Google Maps</p>
-            <button onclick="location.reload()" class="mt-8 px-6 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-500 hover:bg-gray-50">重新整理</button>
+
+            <div id="list-container" class="space-y-3 pb-20"></div>
         </div>
 
     </main>
 
+    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 z-30 pb-safe">
+        <div class="max-w-2xl mx-auto flex justify-around items-center h-16">
+            <button onclick="switchTab('radar')" id="nav-radar" class="nav-active flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-radar-orange transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="text-[10px]">美食雷達</span>
+            </button>
+            <button onclick="switchTab('list')" id="nav-list" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-radar-orange transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span class="text-[10px]">口袋清單</span>
+            </button>
+        </div>
+    </nav>
+
     <script>
-        // 偵測是否為 LINE 瀏覽器
-        function isInAppBrowser() {
-            const ua = navigator.userAgent || navigator.vendor || window.opera;
-            return (ua.indexOf("Line") > -1 || ua.indexOf("FBAN") > -1 || ua.indexOf("FBAV") > -1);
-        }
+        // =========================================================
+        // ★ 請在下方貼上您的 Google Sheet CSV 連結 ★
+        // =========================================================
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQXPhZ5z3CHn6oemAKkuUuDskGkk6CLfbfNws0s2QL2UQTo6TOIP9kzuOqx5vB8hU_SXF_-ObxsK0h0/pub?output=csv'; 
+        // 例如：'https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv'
+        // =========================================================
+
+        let FOOD_DATA = [];
 
         window.onload = function() {
-            if (isInAppBrowser()) {
-                alert("⚠️ 偵測到您正在使用 LINE 或 FB 內建瀏覽器，可能會造成定位失敗。\n\n建議點選右上角選單，選擇「使用預設瀏覽器開啟」以獲得最佳體驗！");
-            }
-        };
-
-        const KEYWORDS = {
-            'chinese': [
-                '牛肉麵', '肉燥飯', '鱔魚意麵', 
-                '鍋燒意麵', '米糕', '虱目魚', 
-                '熱炒', '火鍋', '粥', 
-                '麵店', '便當', '健康餐盒', '水餃', '炒飯'
-            ],
-            'western': ['漢堡', '義大利麵', '牛排', '披薩', '早午餐', '日式料理', '咖哩', '拉麵', '壽司', '韓式料理', '泰式料理'],
-            'cafe': ['咖啡廳', '甜點', '蛋糕', '冰店', '豆花', '下午茶', '布丁', '舒芙蕾'],
-            'drinks': ['手搖飲料', '果汁', '紅茶', '綠豆沙', '楊枝甘露', '珍珠奶茶'],
-            'late_night': ['鹹酥雞', '燒烤', '串燒', '宵夜', '居酒屋', '滷味', '豆漿']
-        };
-
-        const CATEGORY_NAMES = {
-            'chinese': '🍜 中式美食',
-            'western': '🍔 西式料理',
-            'cafe': '🍰 甜點咖啡',
-            'drinks': '🍹 手搖飲料',
-            'late_night': '🍢 宵夜時光'
-        };
-
-        const ALL_KEYWORDS = [].concat(...Object.values(KEYWORDS));
-
-        function showSubMenu(category) {
-            const categoryView = document.getElementById('category-view');
-            const submenuView = document.getElementById('submenu-view');
-            const container = document.getElementById('submenu-container');
-
-            if (!categoryView || !submenuView || !container) return;
-
-            categoryView.classList.add('hidden');
-            submenuView.classList.remove('hidden');
-            
-            document.getElementById('main-content').scrollTop = 0;
-            
-            document.getElementById('submenu-title').innerText = CATEGORY_NAMES[category];
-            container.innerHTML = ''; 
-
-            const randomBtn = document.createElement('button');
-            randomBtn.className = "col-span-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 rounded-xl shadow-lg font-bold flex justify-center items-center gap-2 transform active:scale-95 transition-all hover:shadow-xl";
-            randomBtn.innerHTML = "🎲 隨便，這類都可以";
-            randomBtn.onclick = () => startLocationSearch(category, true); 
-            container.appendChild(randomBtn);
-
-            if (KEYWORDS[category]) {
-                KEYWORDS[category].forEach(keyword => {
-                    const btn = document.createElement('button');
-                    btn.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-radar-orange font-bold text-gray-700 text-lg transition-all active:scale-95 active:bg-orange-50";
-                    btn.innerText = keyword;
-                    btn.onclick = () => startLocationSearch(keyword, false); 
-                    container.appendChild(btn);
-                });
-            }
-        }
-
-        function startLocationSearch(param, isRandomCategory) {
-            document.getElementById('category-view').classList.add('hidden');
-            document.getElementById('submenu-view').classList.add('hidden');
-            document.getElementById('loading-view').classList.remove('hidden');
-
-            let searchKeyword = '';
-            let displayText = '';
-
-            if (param === 'surprise') {
-                searchKeyword = ALL_KEYWORDS[Math.floor(Math.random() * ALL_KEYWORDS.length)];
-                displayText = `命運選中了... ${searchKeyword}！`;
-            } else if (isRandomCategory) {
-                const list = KEYWORDS[param];
-                searchKeyword = list[Math.floor(Math.random() * list.length)];
-                displayText = `正在隨機搜尋... ${searchKeyword}`;
+            if (SHEET_URL.includes('PASTE_YOUR')) {
+                alert("請記得修改程式碼，貼上您的 Google Sheet 連結喔！");
+                document.getElementById('header-status').innerText = "尚未設定連結";
             } else {
-                searchKeyword = param;
-                displayText = `正在搜尋附近的... ${searchKeyword}`;
+                fetchDataFromSheet();
             }
+        };
 
-            document.getElementById('loading-text').innerText = displayText;
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        setTimeout(() => {
-                            // ★ 修正重點：不自動 reset，避免使用者覺得被彈回首頁
-                            openGoogleMaps(searchKeyword, lat, lng);
-                        }, 800);
-                    },
-                    (error) => {
-                        console.error("Geolocation Error:", error);
-                        alert("定位失敗或被封鎖，將改用一般搜尋。\n(建議使用 Safari/Chrome)");
-                        
-                        const url = `https://www.google.com/maps/search/${encodeURIComponent(searchKeyword)}`;
-                        // 失敗時也使用 location.href
-                        window.location.href = url;
-                    }
-                );
-            } else {
-                alert("你的瀏覽器不支援定位功能。");
-                const url = `https://www.google.com/maps/search/${encodeURIComponent(searchKeyword)}`;
-                window.location.href = url;
+        async function fetchDataFromSheet() {
+            document.getElementById('header-status').innerText = "更新資料中...";
+            try {
+                // 加個時間戳記避免快取
+                const response = await fetch(SHEET_URL + "&t=" + new Date().getTime());
+                const csvText = await response.text();
+                parseCSV(csvText);
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('header-status').innerText = "連線失敗";
+                alert("無法讀取 Google Sheet，請確認：\n1. 網址是否正確\n2. 是否已發布為 CSV 格式");
             }
         }
 
-        function openGoogleMaps(keyword, lat, lng) {
-            const url = `https://www.google.com/maps/search/${encodeURIComponent(keyword)}/@${lat},${lng},15z`;
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const result = [];
+            // 跳過標題列 (i=1)
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // 簡易 CSV 解析 (處理逗號)
+                // 假設沒有引號包覆的複雜狀況
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    result.push({
+                        name: parts[0].trim(),
+                        cat: parts[1] ? parts[1].trim() : 'unclass',
+                        addr: parts[2] ? parts[2].trim() : '台南市',
+                        note: parts[3] ? parts[3].trim() : ''
+                    });
+                }
+            }
+            FOOD_DATA = result;
+            document.getElementById('header-status').innerText = `雲端同步：${FOOD_DATA.length} 間`;
+            document.getElementById('total-count').innerText = `${FOOD_DATA.length} 間`;
+            // 如果剛打開且有資料，刷新列表
+            filterList('all');
+        }
+
+        // --- 介面功能 (與之前相同) ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`page-${tabName}`).classList.remove('hidden');
             
-            // ★ 修正重點：使用 location.href (同分頁跳轉) 
-            // 這樣不會被瀏覽器當成彈窗廣告擋掉
-            window.location.href = url;
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('nav-active', 'text-radar-orange'));
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-gray-400'));
+            
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            activeBtn.classList.add('nav-active', 'text-radar-orange');
+            activeBtn.classList.remove('text-gray-400');
+
+            if (tabName === 'list') filterList('all');
         }
 
-        function resetApp() {
-            document.getElementById('loading-view').classList.add('hidden');
-            document.getElementById('submenu-view').classList.add('hidden');
-            document.getElementById('category-view').classList.remove('hidden');
-            document.getElementById('main-content').scrollTop = 0;
+        function searchByCategory(category) {
+            const pool = FOOD_DATA.filter(i => i.cat === category);
+            if (pool.length > 0) {
+                const target = pool[Math.floor(Math.random() * pool.length)];
+                openMap(target);
+            } else {
+                alert("口袋名單裡還沒有這個分類的資料，先去 Google Sheet 新增吧！");
+            }
+        }
+
+        function pickRandom() {
+            if (FOOD_DATA.length === 0) return alert("資料讀取中...");
+            const target = FOOD_DATA[Math.floor(Math.random() * FOOD_DATA.length)];
+            if(confirm(`命運之神選中了：\n\n🏠 ${target.name}\n📍 ${target.addr}\n\n要去這家嗎？`)) {
+                openMap(target);
+            }
+        }
+
+        function filterList(filterCat) {
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.className = "filter-btn px-4 py-1.5 rounded-full text-sm font-bold bg-white text-gray-500 border whitespace-nowrap");
+            event.target.className = "filter-btn active px-4 py-1.5 rounded-full text-sm font-bold bg-gray-800 text-white whitespace-nowrap shadow-md";
+
+            const filtered = FOOD_DATA.filter(item => filterCat === 'all' || item.cat === filterCat);
+            
+            filtered.forEach((item, index) => {
+                let tagColor = "bg-gray-100 text-gray-500";
+                if(item.cat === 'healthy') tagColor = "bg-green-100 text-green-600";
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:scale-95 transition-transform';
+                card.onclick = () => openMap(item);
+                
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h3 class="font-bold text-gray-800 truncate text-lg">${item.name}</h3>
+                        <p class="text-xs text-gray-400 truncate mt-1">📍 ${item.addr}</p>
+                        <div class="mt-2 flex gap-2">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${tagColor}">${item.cat}</span>
+                            ${item.note ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">${item.note}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-2xl text-gray-300">👉</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openMap(item) {
+            window.location.href = `http://maps.google.com/?q=${encodeURIComponent(item.name + " " + item.addr)}`;
         }
     </script>
 </body>
