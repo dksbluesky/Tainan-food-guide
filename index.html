@@ -275,28 +275,54 @@
         function parseLineChat(text) {
             const lines = text.split('\n');
             const results = [];
+            
+            // ★ 2025/01/24 更新：超級關鍵字資料庫 (針對您的 LINE 對話優化)
             const keywords = {
-                'chinese': ['麵', '飯', '粥', '餃', '湯', '餅', '肉燥', '熱炒', '火鍋', '砂鍋', '鴨', '雞', '米糕', '便當', '快餐', '小吃', '壽司', '日料', '丼', '牛排'], 
-                'western': ['漢堡', '義大利', '披薩', 'Pizza', 'Pasta', '牛排', '韓式', '泰式', '港式', '燒肉'],
-                'cafe': ['咖啡', 'Cafe', '甜點', '蛋糕', '冰', '豆花', '早午餐', 'Brunch', '麵包', '烘焙'],
-                'drinks': ['茶', '飲', '奶', '果汁'],
-                'healthy': ['健康', '低卡', '舒肥', '餐盒', '水煮'],
-                'late_night': ['燒烤', '串燒', '鹹酥雞', '炸雞', '居酒屋']
+                'chinese': [
+                    '麵', '飯', '粥', '餃', '湯', '餅', '肉燥', '熱炒', '火鍋', '砂鍋', 
+                    '鴨', '雞', '米糕', '便當', '快餐', '小吃', '壽司', '日料', '丼', '牛排', 
+                    '羹', '饅頭', '碗粿', '肉圓', '刈包', '水煎包', '擔仔麵', '鱔魚', '鵝肉',
+                    '牛肉', '羊肉', '滷味', '食堂', '燒肉飯', '腿庫', '排骨', '意麵', '扁食'
+                ], 
+                'western': [
+                    '漢堡', '義大利', '披薩', 'Pizza', 'Pasta', '牛排', '韓式', '泰式', '港式', 
+                    '燒肉', '越式', '美式', '異國', '咖哩', 'Curry', 'Burger', 'Bistro', '餐酒館',
+                    '日式', '鐵板燒' // 雖然是日式，但通常歸類在異國或西式比較方便找
+                ],
+                'cafe': [
+                    '咖啡', 'Cafe', '甜點', '蛋糕', '冰', '豆花', '早午餐', 'Brunch', '麵包', 
+                    '烘焙', '甜甜圈', '鬆餅', '布丁', '蜜餞', '伴手禮', '麻糬', 'Coffee', '下午茶'
+                ],
+                'drinks': [
+                    '茶', '飲', '奶', '果汁', '紅茶', '綠茶', '手搖', '飲料'
+                ],
+                'healthy': [
+                    '健康', '低卡', '舒肥', '餐盒', '水煮', '輕食', 'Poke', '沙拉', 'Diet'
+                ],
+                'late_night': [
+                    '燒烤', '串燒', '鹹酥雞', '炸雞', '居酒屋', '宵夜', '鹽酥雞', '雞排', '烤玉米'
+                ]
             };
 
             lines.forEach((line, index) => {
                 line = line.trim();
                 if (!line) return;
                 
+                // 1. 抓連結
                 const mapLinkMatch = line.match(/https:\/\/(g\.co\/kgs\/|share\.google\/|goo\.gl\/maps)[a-zA-Z0-9_]+/);
+                // 2. 抓地址 (有些對話只有地址沒有連結)
                 const addrMatch = line.match(/台南市\S+(區|路|街|巷)\S+/);
 
                 if (mapLinkMatch || addrMatch) {
                     let name = "";
                     let rawName = "";
+                    
+                    // 往上找店名 (最多找 3 行)
                     for (let i = 1; i <= 3; i++) {
                         const prevLine = lines[index - i];
+                        // 排除日期、時間、網址，剩下的通常就是店名
                         if (prevLine && !prevLine.match(/^\d{4}\./) && !prevLine.match(/^\d{2}:\d{2}/) && !prevLine.includes('https')) {
+                            // 移除 LINE 的 "21:23 嘟 " 這種前綴
                             rawName = prevLine.replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
                             if (rawName && rawName.length < 30) { 
                                 name = rawName;
@@ -304,17 +330,28 @@
                             }
                         }
                     }
-                    if (!name) name = line.replace(/https:\/\/.*$/, '').replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
-                    name = name.replace(/,/g, ' ').trim(); 
+                    
+                    // 如果往上找不到，可能在同一行 (例如：12:30 嘟 吃麵吧...)
+                    if (!name) {
+                        name = line.replace(/https:\/\/.*$/, '').replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
+                    }
+
+                    // ★ 關鍵修正：移除店名中的逗號，避免 CSV 欄位錯亂
+                    name = name.replace(/,/g, ' ').replace(/，/g, ' ').trim(); 
                     
                     const address = addrMatch ? addrMatch[0] : "台南市";
                     
+                    // 自動分類邏輯
                     let category = 'unclass';
-                    const checkStr = name + address;
-                    if (checkStr.includes('健康') || checkStr.includes('餐盒')) category = 'healthy';
-                    else if (checkStr.match(/咖啡|甜點|蛋糕|冰/)) category = 'cafe';
-                    else if (checkStr.match(/燒烤|串燒|炸雞/)) category = 'late_night';
+                    const checkStr = name + address; // 把店名跟地址拼起來一起檢查
+                    
+                    // 優先權順序：健康 > 甜點/咖啡 > 宵夜 > 其他
+                    if (checkStr.includes('健康') || checkStr.includes('餐盒') || checkStr.includes('舒肥')) category = 'healthy';
+                    else if (checkStr.match(/咖啡|甜點|蛋糕|冰|豆花|早午餐|Brunch/i)) category = 'cafe';
+                    else if (checkStr.match(/燒烤|串燒|炸雞|鹹酥雞|居酒屋/)) category = 'late_night';
+                    else if (checkStr.match(/茶|飲|奶/)) category = 'drinks';
                     else {
+                        // 跑迴圈對關鍵字
                         for (const [cat, keys] of Object.entries(keywords)) {
                             if (keys.some(k => checkStr.includes(k))) {
                                 category = cat;
@@ -322,7 +359,14 @@
                             }
                         }
                     }
+                    
+                    // 如果還是未分類，但地址在台南，預設給「中式」試試看 (因為台南小吃最多)
+                    if (category === 'unclass') {
+                         // 這裡您可以決定要不要這行，如果不想亂分就註解掉
+                         // category = 'chinese'; 
+                    }
 
+                    // 存入結果 (避免重複)
                     if (name && !results.some(r => r.name === name)) {
                         results.push({ name, cat: category, addr: address, note: "" });
                     }
@@ -441,3 +485,4 @@
     </script>
 </body>
 </html>
+
