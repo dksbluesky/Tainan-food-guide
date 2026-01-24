@@ -129,9 +129,8 @@
                     <span class="text-5xl block mb-2">⚙️</span>
                     <h2 class="text-xl font-bold text-gray-800">更新資料庫</h2>
                     <p class="text-sm text-gray-500 mt-2">
-                        1. 上傳 LINE 備份檔 (.txt)<br>
-                        2. 立即更新手機畫面 (家人還看不到)<br>
-                        3. 下載 CSV 並上傳到 Google Drive (同步給家人)
+                        1. 上傳 LINE 備份檔 (.txt) 更新手機<br>
+                        2. 下載 CSV 並用「匯入」更新雲端
                     </p>
                 </div>
 
@@ -139,22 +138,34 @@
                     <div class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 group-hover:bg-orange-50 group-hover:border-radar-orange transition-colors">
                         <div class="flex flex-col items-center justify-center pt-5 pb-6">
                             <svg class="w-8 h-8 mb-3 text-gray-400 group-hover:text-radar-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                            <p class="text-sm text-gray-500"><span class="font-semibold">點擊上傳</span> LINE 對話紀錄</p>
+                            <p class="text-sm text-gray-500"><span class="font-semibold">點擊上傳</span> LINE 備份 txt</p>
                         </div>
                         <input type="file" class="hidden" accept=".txt" onchange="handleFileUpload(this)" />
                     </div>
                 </label>
 
                 <div id="upload-status" class="hidden mt-6 p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-200">
-                    <p class="font-bold text-lg mb-1">✅ 更新成功！</p>
-                    <p class="mb-2">您的手機已顯示最新資料 (<span id="new-count">0</span> 筆)</p>
+                    <p class="font-bold text-lg mb-1">✅ 轉檔成功！</p>
+                    <p class="mb-2">您的手機已更新為 <span id="new-count">0</span> 筆資料</p>
                     
                     <button onclick="downloadCSV()" class="w-full mt-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 transition-colors flex justify-center items-center gap-2">
-                        <span>⬇️ 下載 CSV 檔案</span>
+                        <span>⬇️ 1. 下載 CSV 檔案</span>
                     </button>
-                    <p class="text-xs text-green-600 mt-2 text-center">
-                        (記得將此檔案上傳至 Google Drive，<br>家人才能看到更新喔！)
-                    </p>
+
+                    <button onclick="openGoogleDrive()" class="w-full mt-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition-colors flex justify-center items-center gap-2">
+                        <span>🚀 2. 前往 Google Drive 匯入</span>
+                    </button>
+                    
+                    <div class="mt-3 text-xs text-gray-500 bg-white p-2 rounded border border-gray-200">
+                        <p class="font-bold">⚠️ 重要：如何更新雲端？</p>
+                        <ol class="list-decimal list-inside mt-1 space-y-1">
+                            <li>點擊上方按鈕打開 Google Drive</li>
+                            <li>打開原本的 Google Sheet</li>
+                            <li>選單：<strong>檔案 > 匯入 (Import)</strong></li>
+                            <li>上傳剛剛下載的 CSV</li>
+                            <li>選擇 <strong>「取代目前的試算表」</strong></li>
+                        </ol>
+                    </div>
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100 text-center">
@@ -199,7 +210,6 @@
         let FOOD_DATA = [];
 
         window.onload = function() {
-            // 預設先抓雲端
             fetchDataFromSheet();
         };
 
@@ -214,12 +224,9 @@
             } catch (error) {
                 console.error("Error:", error);
                 document.getElementById('header-status').innerText = "連線失敗";
-                // 失敗時不跳 alert 打擾使用者，除非資料是空的
-                if(FOOD_DATA.length === 0) alert("無法讀取 Google Sheet，請確認網路連線。");
             }
         }
 
-        // --- 2. 解析 CSV (雲端格式) ---
         function parseCSV(text) {
             const lines = text.split('\n');
             const result = [];
@@ -240,7 +247,7 @@
             updateApp(result, "雲端資料");
         }
 
-        // --- 3. 解析 TXT (LINE 備份) ---
+        // --- 2. 轉檔功能 ---
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -251,17 +258,13 @@
                 const parsed = parseLineChat(text);
                 
                 if (parsed.length > 0) {
-                    // ★ 關鍵：立即覆蓋全域變數
+                    // 立即更新 App
                     updateApp(parsed, "本機暫存 (TXT)");
                     
-                    // 顯示成功區塊
                     document.getElementById('upload-status').classList.remove('hidden');
                     document.getElementById('new-count').innerText = parsed.length;
                     
-                    alert(`✅ 更新成功！\n\n已載入 ${parsed.length} 筆資料。\n您的畫面已更新，請記得下載 CSV 並上傳到 Google Drive。`);
-                    
-                    // 自動跳轉到列表看結果
-                    // switchTab('list'); 
+                    alert(`✅ 轉檔成功！\n\n您的手機畫面已更新。\n請記得下載 CSV 並到 Google Drive 使用「匯入」功能更新雲端。`);
                 } else {
                     alert("讀取失敗，請確認檔案格式。");
                 }
@@ -302,7 +305,7 @@
                         }
                     }
                     if (!name) name = line.replace(/https:\/\/.*$/, '').replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
-                    name = name.replace(/,/g, ' ').trim(); // 移除逗號避免 CSV 壞掉
+                    name = name.replace(/,/g, ' ').trim(); 
                     
                     const address = addrMatch ? addrMatch[0] : "台南市";
                     
@@ -328,20 +331,19 @@
             return results;
         }
 
-        // --- 4. 更新 App 狀態 (通用) ---
+        // --- 3. 更新 App 狀態 ---
         function updateApp(newData, sourceLabel) {
             FOOD_DATA = newData;
             document.getElementById('total-count').innerText = `${FOOD_DATA.length} 間`;
             document.getElementById('header-status').innerText = `已載入: ${FOOD_DATA.length} 間`;
             document.getElementById('source-label').innerText = sourceLabel;
             
-            // 如果當前在列表頁，重新整理列表
             if (!document.getElementById('page-list').classList.contains('hidden')) {
                 filterList('all');
             }
         }
 
-        // --- 5. 下載 CSV ---
+        // --- 4. 輔助功能 ---
         function downloadCSV() {
             let csvContent = "\uFEFF店名,分類,地址,筆記\n"; 
             FOOD_DATA.forEach(item => {
@@ -351,14 +353,18 @@
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", "台南美食清單_最新.csv");
+            link.setAttribute("download", "台南美食清單_更新.csv");
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // --- 介面操作 (Tab / Search) ---
+        function openGoogleDrive() {
+            window.open('https://drive.google.com/', '_blank');
+        }
+
+        // --- 介面操作 ---
         function switchTab(tabName) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(`page-${tabName}`).classList.remove('hidden');
@@ -379,7 +385,7 @@
                 const target = pool[Math.floor(Math.random() * pool.length)];
                 openMap(target);
             } else {
-                alert("口袋名單裡還沒有這個分類的資料！");
+                alert("沒有這個分類的資料");
             }
         }
 
