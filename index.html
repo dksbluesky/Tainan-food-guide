@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台南美食雷達 | 家庭共享版</title>
+    <title>台南美食雷達 | 完整整合版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script>
@@ -59,11 +59,11 @@
             <div class="flex items-center gap-2" onclick="location.reload()">
                 <span class="text-3xl filter drop-shadow-sm">☁️</span>
                 <div>
-                    <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-radar-orange to-radar-red tracking-wide">Family Food</h1>
+                    <h1 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-radar-orange to-radar-red tracking-wide">Food Radar</h1>
                     <p class="text-[10px] text-gray-500 font-bold bg-white/50 px-2 py-0.5 rounded-full inline-block" id="header-status">連線中...</p>
                 </div>
             </div>
-            <button onclick="fetchDataFromSheet()" class="bg-gray-100 text-gray-500 p-2 rounded-full hover:bg-radar-orange hover:text-white transition-colors">
+            <button onclick="location.reload()" class="bg-gray-100 text-gray-500 p-2 rounded-full hover:bg-radar-orange hover:text-white transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -75,7 +75,7 @@
         
         <div id="page-radar" class="page-section animate-pop">
             <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-1">家庭美食雷達</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">今天想吃什麼？</h2>
                 <p class="text-gray-500 text-sm">搜尋我們共同的口袋名單</p>
             </div>
             
@@ -123,6 +123,46 @@
             <div id="list-container" class="space-y-3 pb-20"></div>
         </div>
 
+        <div id="page-settings" class="page-section hidden animate-slide-up">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="text-center mb-6">
+                    <span class="text-5xl block mb-2">⚙️</span>
+                    <h2 class="text-xl font-bold text-gray-800">更新資料庫</h2>
+                    <p class="text-sm text-gray-500 mt-2">
+                        1. 上傳 LINE 備份檔 (.txt)<br>
+                        2. 立即更新手機畫面 (家人還看不到)<br>
+                        3. 下載 CSV 並上傳到 Google Drive (同步給家人)
+                    </p>
+                </div>
+
+                <label class="block w-full cursor-pointer group">
+                    <div class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 group-hover:bg-orange-50 group-hover:border-radar-orange transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-3 text-gray-400 group-hover:text-radar-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="text-sm text-gray-500"><span class="font-semibold">點擊上傳</span> LINE 對話紀錄</p>
+                        </div>
+                        <input type="file" class="hidden" accept=".txt" onchange="handleFileUpload(this)" />
+                    </div>
+                </label>
+
+                <div id="upload-status" class="hidden mt-6 p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-200">
+                    <p class="font-bold text-lg mb-1">✅ 更新成功！</p>
+                    <p class="mb-2">您的手機已顯示最新資料 (<span id="new-count">0</span> 筆)</p>
+                    
+                    <button onclick="downloadCSV()" class="w-full mt-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 transition-colors flex justify-center items-center gap-2">
+                        <span>⬇️ 下載 CSV 檔案</span>
+                    </button>
+                    <p class="text-xs text-green-600 mt-2 text-center">
+                        (記得將此檔案上傳至 Google Drive，<br>家人才能看到更新喔！)
+                    </p>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <p class="text-xs text-gray-400">目前資料來源：<span id="source-label">雲端連線</span></p>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 z-30 pb-safe">
@@ -140,6 +180,12 @@
                 </svg>
                 <span class="text-[10px]">口袋清單</span>
             </button>
+            <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-radar-orange transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span class="text-[10px]">資料更新</span>
+            </button>
         </div>
     </nav>
 
@@ -147,50 +193,41 @@
         // =========================================================
         // ★ 已內建您的 Google Sheet 連結 ★
         // =========================================================
-        // 修正重點：移除了時間戳記，使用最單純的發布連結，減少被擋的機率
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQXPhZ5z3CHn6oemAKkuUuDskGkk6CLfbfNws0s2QL2UQTo6TOIP9kzuOqx5vB8hU_SXF_-ObxsK0h0/pub?gid=0&single=true&output=csv'; 
         // =========================================================
 
         let FOOD_DATA = [];
 
         window.onload = function() {
+            // 預設先抓雲端
             fetchDataFromSheet();
         };
 
+        // --- 1. 抓取雲端資料 ---
         async function fetchDataFromSheet() {
-            document.getElementById('header-status').innerText = "更新資料中...";
+            document.getElementById('header-status').innerText = "雲端同步中...";
             try {
-                // 嘗試直接讀取，移除 &t= 參數以避免跨域問題
                 const response = await fetch(SHEET_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
-                }
-                
+                if (!response.ok) throw new Error("Network response was not ok");
                 const csvText = await response.text();
                 parseCSV(csvText);
             } catch (error) {
                 console.error("Error:", error);
                 document.getElementById('header-status').innerText = "連線失敗";
-                // 顯示更詳細的錯誤，方便除錯
-                alert("無法讀取 Google Sheet！\n\n錯誤原因：" + error.message + "\n\n請嘗試：\n1. 回到 Google Sheet\n2. 按下「停止發布」\n3. 再重新按一次「發布到網路」\n4. 確保選擇 CSV 格式");
+                // 失敗時不跳 alert 打擾使用者，除非資料是空的
+                if(FOOD_DATA.length === 0) alert("無法讀取 Google Sheet，請確認網路連線。");
             }
         }
 
+        // --- 2. 解析 CSV (雲端格式) ---
         function parseCSV(text) {
             const lines = text.split('\n');
             const result = [];
-            
-            // 跳過標題列 (i=1)
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
-                // 處理 CSV 格式
-                // 簡易處理：移除可能存在的引號，避免資料錯位
                 const cleanLine = line.replace(/"/g, ''); 
                 const parts = cleanLine.split(',');
-                
                 if (parts.length >= 2) {
                     result.push({
                         name: parts[0].trim(),
@@ -200,17 +237,128 @@
                     });
                 }
             }
-            FOOD_DATA = result;
-            document.getElementById('header-status').innerText = `雲端同步：${FOOD_DATA.length} 間`;
+            updateApp(result, "雲端資料");
+        }
+
+        // --- 3. 解析 TXT (LINE 備份) ---
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const parsed = parseLineChat(text);
+                
+                if (parsed.length > 0) {
+                    // ★ 關鍵：立即覆蓋全域變數
+                    updateApp(parsed, "本機暫存 (TXT)");
+                    
+                    // 顯示成功區塊
+                    document.getElementById('upload-status').classList.remove('hidden');
+                    document.getElementById('new-count').innerText = parsed.length;
+                    
+                    alert(`✅ 更新成功！\n\n已載入 ${parsed.length} 筆資料。\n您的畫面已更新，請記得下載 CSV 並上傳到 Google Drive。`);
+                    
+                    // 自動跳轉到列表看結果
+                    // switchTab('list'); 
+                } else {
+                    alert("讀取失敗，請確認檔案格式。");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseLineChat(text) {
+            const lines = text.split('\n');
+            const results = [];
+            const keywords = {
+                'chinese': ['麵', '飯', '粥', '餃', '湯', '餅', '肉燥', '熱炒', '火鍋', '砂鍋', '鴨', '雞', '米糕', '便當', '快餐', '小吃', '壽司', '日料', '丼', '牛排'], 
+                'western': ['漢堡', '義大利', '披薩', 'Pizza', 'Pasta', '牛排', '韓式', '泰式', '港式', '燒肉'],
+                'cafe': ['咖啡', 'Cafe', '甜點', '蛋糕', '冰', '豆花', '早午餐', 'Brunch', '麵包', '烘焙'],
+                'drinks': ['茶', '飲', '奶', '果汁'],
+                'healthy': ['健康', '低卡', '舒肥', '餐盒', '水煮'],
+                'late_night': ['燒烤', '串燒', '鹹酥雞', '炸雞', '居酒屋']
+            };
+
+            lines.forEach((line, index) => {
+                line = line.trim();
+                if (!line) return;
+                
+                const mapLinkMatch = line.match(/https:\/\/(g\.co\/kgs\/|share\.google\/|goo\.gl\/maps)[a-zA-Z0-9_]+/);
+                const addrMatch = line.match(/台南市\S+(區|路|街|巷)\S+/);
+
+                if (mapLinkMatch || addrMatch) {
+                    let name = "";
+                    let rawName = "";
+                    for (let i = 1; i <= 3; i++) {
+                        const prevLine = lines[index - i];
+                        if (prevLine && !prevLine.match(/^\d{4}\./) && !prevLine.match(/^\d{2}:\d{2}/) && !prevLine.includes('https')) {
+                            rawName = prevLine.replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
+                            if (rawName && rawName.length < 30) { 
+                                name = rawName;
+                                break;
+                            }
+                        }
+                    }
+                    if (!name) name = line.replace(/https:\/\/.*$/, '').replace(/^\d{2}:\d{2}\s+\S+\s+/, '').trim();
+                    name = name.replace(/,/g, ' ').trim(); // 移除逗號避免 CSV 壞掉
+                    
+                    const address = addrMatch ? addrMatch[0] : "台南市";
+                    
+                    let category = 'unclass';
+                    const checkStr = name + address;
+                    if (checkStr.includes('健康') || checkStr.includes('餐盒')) category = 'healthy';
+                    else if (checkStr.match(/咖啡|甜點|蛋糕|冰/)) category = 'cafe';
+                    else if (checkStr.match(/燒烤|串燒|炸雞/)) category = 'late_night';
+                    else {
+                        for (const [cat, keys] of Object.entries(keywords)) {
+                            if (keys.some(k => checkStr.includes(k))) {
+                                category = cat;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (name && !results.some(r => r.name === name)) {
+                        results.push({ name, cat: category, addr: address, note: "" });
+                    }
+                }
+            });
+            return results;
+        }
+
+        // --- 4. 更新 App 狀態 (通用) ---
+        function updateApp(newData, sourceLabel) {
+            FOOD_DATA = newData;
             document.getElementById('total-count').innerText = `${FOOD_DATA.length} 間`;
+            document.getElementById('header-status').innerText = `已載入: ${FOOD_DATA.length} 間`;
+            document.getElementById('source-label').innerText = sourceLabel;
             
-            // 如果成功載入，自動刷新列表
-            if (document.getElementById('page-list').classList.contains('hidden') === false) {
+            // 如果當前在列表頁，重新整理列表
+            if (!document.getElementById('page-list').classList.contains('hidden')) {
                 filterList('all');
             }
         }
 
-        // --- 介面功能 ---
+        // --- 5. 下載 CSV ---
+        function downloadCSV() {
+            let csvContent = "\uFEFF店名,分類,地址,筆記\n"; 
+            FOOD_DATA.forEach(item => {
+                csvContent += `${item.name},${item.cat},${item.addr},${item.note}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "台南美食清單_最新.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- 介面操作 (Tab / Search) ---
         function switchTab(tabName) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(`page-${tabName}`).classList.remove('hidden');
@@ -231,12 +379,12 @@
                 const target = pool[Math.floor(Math.random() * pool.length)];
                 openMap(target);
             } else {
-                alert("口袋名單裡還沒有這個分類的資料，先去 Google Sheet 新增吧！");
+                alert("口袋名單裡還沒有這個分類的資料！");
             }
         }
 
         function pickRandom() {
-            if (FOOD_DATA.length === 0) return alert("資料讀取中...如果很久沒反應，請檢查網路或重新整理。");
+            if (FOOD_DATA.length === 0) return alert("資料讀取中...");
             const target = FOOD_DATA[Math.floor(Math.random() * FOOD_DATA.length)];
             if(confirm(`命運之神選中了：\n\n🏠 ${target.name}\n📍 ${target.addr}\n\n要去這家嗎？`)) {
                 openMap(target);
@@ -253,7 +401,7 @@
             const filtered = FOOD_DATA.filter(item => filterCat === 'all' || item.cat === filterCat);
             
             if(filtered.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-400 mt-10">這裡還沒有資料喔</div>';
+                container.innerHTML = '<div class="text-center text-gray-400 mt-10">無資料</div>';
                 return;
             }
 
