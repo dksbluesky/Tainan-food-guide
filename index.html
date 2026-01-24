@@ -145,48 +145,52 @@
 
     <script>
         // =========================================================
-        // ★ 請在下方貼上您的 Google Sheet CSV 連結 ★
+        // ★ 已內建您的 Google Sheet 連結 ★
         // =========================================================
+        // 修正重點：移除了時間戳記，使用最單純的發布連結，減少被擋的機率
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQXPhZ5z3CHn6oemAKkuUuDskGkk6CLfbfNws0s2QL2UQTo6TOIP9kzuOqx5vB8hU_SXF_-ObxsK0h0/pub?gid=0&single=true&output=csv'; 
-        // 例如：'https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv'
         // =========================================================
 
         let FOOD_DATA = [];
 
         window.onload = function() {
-            if (SHEET_URL.includes('PASTE_YOUR')) {
-                alert("請記得修改程式碼，貼上您的 Google Sheet 連結喔！");
-                document.getElementById('header-status').innerText = "尚未設定連結";
-            } else {
-                fetchDataFromSheet();
-            }
+            fetchDataFromSheet();
         };
 
         async function fetchDataFromSheet() {
             document.getElementById('header-status').innerText = "更新資料中...";
             try {
-                // 加個時間戳記避免快取
-                const response = await fetch(SHEET_URL + "&t=" + new Date().getTime());
+                // 嘗試直接讀取，移除 &t= 參數以避免跨域問題
+                const response = await fetch(SHEET_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+                }
+                
                 const csvText = await response.text();
                 parseCSV(csvText);
             } catch (error) {
                 console.error("Error:", error);
                 document.getElementById('header-status').innerText = "連線失敗";
-                alert("無法讀取 Google Sheet，請確認：\n1. 網址是否正確\n2. 是否已發布為 CSV 格式");
+                // 顯示更詳細的錯誤，方便除錯
+                alert("無法讀取 Google Sheet！\n\n錯誤原因：" + error.message + "\n\n請嘗試：\n1. 回到 Google Sheet\n2. 按下「停止發布」\n3. 再重新按一次「發布到網路」\n4. 確保選擇 CSV 格式");
             }
         }
 
         function parseCSV(text) {
             const lines = text.split('\n');
             const result = [];
+            
             // 跳過標題列 (i=1)
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
                 
-                // 簡易 CSV 解析 (處理逗號)
-                // 假設沒有引號包覆的複雜狀況
-                const parts = line.split(',');
+                // 處理 CSV 格式
+                // 簡易處理：移除可能存在的引號，避免資料錯位
+                const cleanLine = line.replace(/"/g, ''); 
+                const parts = cleanLine.split(',');
+                
                 if (parts.length >= 2) {
                     result.push({
                         name: parts[0].trim(),
@@ -199,11 +203,14 @@
             FOOD_DATA = result;
             document.getElementById('header-status').innerText = `雲端同步：${FOOD_DATA.length} 間`;
             document.getElementById('total-count').innerText = `${FOOD_DATA.length} 間`;
-            // 如果剛打開且有資料，刷新列表
-            filterList('all');
+            
+            // 如果成功載入，自動刷新列表
+            if (document.getElementById('page-list').classList.contains('hidden') === false) {
+                filterList('all');
+            }
         }
 
-        // --- 介面功能 (與之前相同) ---
+        // --- 介面功能 ---
         function switchTab(tabName) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(`page-${tabName}`).classList.remove('hidden');
@@ -229,7 +236,7 @@
         }
 
         function pickRandom() {
-            if (FOOD_DATA.length === 0) return alert("資料讀取中...");
+            if (FOOD_DATA.length === 0) return alert("資料讀取中...如果很久沒反應，請檢查網路或重新整理。");
             const target = FOOD_DATA[Math.floor(Math.random() * FOOD_DATA.length)];
             if(confirm(`命運之神選中了：\n\n🏠 ${target.name}\n📍 ${target.addr}\n\n要去這家嗎？`)) {
                 openMap(target);
@@ -245,9 +252,15 @@
 
             const filtered = FOOD_DATA.filter(item => filterCat === 'all' || item.cat === filterCat);
             
+            if(filtered.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 mt-10">這裡還沒有資料喔</div>';
+                return;
+            }
+
             filtered.forEach((item, index) => {
                 let tagColor = "bg-gray-100 text-gray-500";
                 if(item.cat === 'healthy') tagColor = "bg-green-100 text-green-600";
+                if(item.cat === 'unclass') tagColor = "bg-red-100 text-red-500";
                 
                 const card = document.createElement('div');
                 card.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:scale-95 transition-transform';
@@ -274,5 +287,3 @@
     </script>
 </body>
 </html>
-
-
